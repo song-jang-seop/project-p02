@@ -21,13 +21,45 @@ const connection = mysql.createConnection({
 
 connection.connect();
 
+const multer = require('multer');
+const upload = multer({dest: './/upload'});
+
 app.get('/api/customers', (req, res) => {
     connection.query(
-      "select * from customer",
+      "select * from customer where isDeleted = 0",
       (err, rows, fields) => {
         res.send(rows);
       }
     );
+});
+
+app.use('/image', express.static('./upload'));
+
+//등록
+app.post('/api/customers', upload.single('image'), (req, res) => {
+  let sql = 'insert into customer values (null, ?, ?, ?, ?, ?, now(), 0)';
+  let image = '/image/' + req.file.fieldname;
+  let name = req.body.name;
+  let birthday = req.body.birthday;
+  let gender = req.body.gender;
+  let job = req.body.job;
+  let params = [image, name, birthday, gender, job];
+  connection.query(sql, params,
+    (err, rows, fields) => {
+      res.send(rows);
+    }
+  );
+});
+
+//수정
+app.delete('/api/customers/:id', (req, res) => {
+  let sql = 'update customer set isDeleted = 1 where id = ?';
+  let paramms = [req.params.id];
+  connection.query(sql, paramms,
+    (err, rows, fields) => {
+      res.send(rows);
+    }
+  )
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
